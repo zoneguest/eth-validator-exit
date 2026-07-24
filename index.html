@@ -3,194 +3,140 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Validator Exit (EIP-7002) — #2122823 / #2109351</title>
+<title>Validator Exit (EIP-7002)</title>
 <style>
   :root {
     --bg:#0d1117; --panel:#161b22; --panel2:#0b0f14; --border:#30363d;
     --fg:#e6edf3; --muted:#9198a1; --mono:#c9d1d9;
-    --ok:#3fb950; --warn:#d29922; --bad:#f85149; --accent:#58a6ff;
+    --ok:#3fb950; --bad:#f85149; --accent:#58a6ff;
     --mono-font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    line-height:1.5; }
-  .wrap { max-width:860px; margin:0 auto; padding:28px 20px 80px; }
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; line-height:1.5; }
+  .wrap { max-width:680px; margin:0 auto; padding:28px 20px 80px; }
   h1 { font-size:20px; margin:0 0 4px; }
-  h2 { font-size:15px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
-    margin:0 0 12px; border-bottom:1px solid var(--border); padding-bottom:8px; }
-  .sub { color:var(--muted); font-size:13px; margin:0 0 20px; }
-  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px;
-    padding:18px; margin:0 0 18px; }
-  .row { display:flex; justify-content:space-between; gap:14px; padding:5px 0; font-size:14px;
-    flex-wrap:wrap; }
-  .row .k { color:var(--muted); }
-  .mono { font-family:var(--mono-font); color:var(--mono); word-break:break-all; font-size:12.5px; }
-  .pill { display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px;
-    border:1px solid var(--border); }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 14px; }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 22px; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px; margin:0 0 16px; }
+  .mono { font-family:var(--mono-font); color:var(--mono); word-break:break-all; }
+  .muted { color:var(--muted); }
+  .small { font-size:12px; }
+  /* summary rows — the operationally-critical fields */
+  .sumrow { display:flex; gap:12px; padding:9px 0; border-top:1px solid var(--border); font-size:14px; align-items:baseline; }
+  .sumrow:first-of-type { border-top:none; }
+  .sumrow .k { color:var(--muted); width:64px; flex:none; }
+  .sumrow .v { flex:1; word-break:break-all; }
+  .big { font-size:15px; font-weight:600; }
+  .pill { display:inline-block; font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; border:1px solid var(--border); vertical-align:middle; }
   .pill.ok { color:var(--ok); border-color:#1f6f2e; background:#0f2a16; }
-  .pill.warn { color:var(--warn); border-color:#6b5111; background:#2a2109; }
   .pill.bad { color:var(--bad); border-color:#7d2620; background:#2a1210; }
   .pill.neutral { color:var(--muted); }
-  .badges { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 20px; }
-  button { font:inherit; font-weight:600; color:var(--fg); background:#21262d;
-    border:1px solid var(--border); border-radius:8px; padding:9px 16px; cursor:pointer; }
+  button { font:inherit; font-weight:600; color:var(--fg); background:#21262d; border:1px solid var(--border); border-radius:8px; padding:10px 16px; cursor:pointer; }
   button:hover:not(:disabled) { background:#30363d; }
-  button.primary { background:#1f6feb; border-color:#1f6feb; }
+  button.primary { background:#1f6feb; border-color:#1f6feb; width:100%; }
   button.primary:hover:not(:disabled) { background:#388bfd; }
-  button.danger { background:#7d2620; border-color:#9e352c; }
+  button.danger { background:#7d2620; border-color:#9e352c; width:100%; }
   button.danger:hover:not(:disabled) { background:#a23c31; }
   button:disabled { opacity:.45; cursor:not-allowed; }
   input[type=text], input[type=number], select { font:inherit; font-family:var(--mono-font); font-size:13px;
-    background:var(--panel2); color:var(--fg); border:1px solid var(--border);
-    border-radius:7px; padding:8px 10px; width:100%; }
-  select { font-family: inherit; }
-  label { font-size:13px; color:var(--muted); display:block; margin:0 0 5px; }
+    background:var(--panel2); color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:9px 10px; width:100%; }
+  select { font-family:inherit; font-size:14px; }
+  label { font-size:12px; color:var(--muted); display:block; margin:0 0 6px; }
   .field { margin:0 0 14px; }
-  .kv { background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px 14px;
-    margin:10px 0; }
-  .kv .lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
-  .note { font-size:12.5px; color:var(--muted); }
-  .warnbox { border:1px solid #6b5111; background:#2a2109; color:#e3c15a; border-radius:8px;
-    padding:10px 12px; font-size:13px; margin:10px 0; }
-  .badbox { border:1px solid #7d2620; background:#2a1210; color:#ff9b93; border-radius:8px;
-    padding:10px 12px; font-size:13px; margin:10px 0; }
-  .okbox { border:1px solid #1f6f2e; background:#0f2a16; color:#7ee787; border-radius:8px;
-    padding:10px 12px; font-size:13px; margin:10px 0; }
   a { color:var(--accent); }
-  .hl { color:var(--accent); }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  @media (max-width:640px){ .grid2 { grid-template-columns:1fr; } }
-  .step { display:flex; align-items:baseline; gap:8px; margin:0 0 10px; }
-  .stepn { color:var(--muted); font-family:var(--mono-font); font-size:12px; }
-  code { font-family:var(--mono-font); background:var(--panel2); padding:1px 5px; border-radius:4px;
-    font-size:12.5px; }
-  .anno { font-size:11.5px; color:var(--muted); margin-top:4px; }
-  .anno b { color:var(--accent); font-weight:600; }
+  .databox { background:var(--panel2); border:1px solid var(--border); border-radius:7px; padding:10px; font-size:12px; margin:10px 0 6px; }
+  .anno { font-size:11.5px; color:var(--muted); }
+  .anno b { color:var(--accent); }
+  .tonote { border-top:1px solid var(--border); margin-top:14px; padding-top:12px; }
   .checkline { display:flex; gap:9px; align-items:flex-start; font-size:13.5px; margin:14px 0; }
   .checkline input { margin-top:3px; width:auto; }
-  .small { font-size:12px; }
-  .hidden { display:none; }
+  .badbox { border:1px solid #7d2620; background:#2a1210; color:#ff9b93; border-radius:8px; padding:10px 12px; font-size:13px; margin:10px 0; }
+  .okbox { border:1px solid #1f6f2e; background:#0f2a16; color:#7ee787; border-radius:8px; padding:10px 12px; font-size:13px; margin:10px 0; }
+  details.adv { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:0; margin:0 0 16px; }
+  details.adv > summary { padding:16px 18px; cursor:pointer; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  details.adv[open] > summary { border-bottom:1px solid var(--border); }
+  .advbody { padding:16px 18px; }
+  .row { display:flex; justify-content:space-between; gap:12px; padding:4px 0; font-size:13px; flex-wrap:wrap; }
+  .row .k { color:var(--muted); }
+  summary::-webkit-details-marker { color:var(--muted); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .grid2 { grid-template-columns:1fr; } }
+  code { font-family:var(--mono-font); background:var(--panel2); padding:1px 5px; border-radius:4px; font-size:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>Self-Custodial Validator Exit</h1>
-  <p class="sub">EIP-7002 execution-layer full exit · no third party, no signing keys, keys never leave your Ledger. This signer controls <b>two</b> validators (<b>#2122823</b>, <b>#2109351</b>) that share one <code>0x01</code> withdrawal address — choose which to exit.</p>
+  <h1>Validator Exit</h1>
+  <p class="sub">EIP-7002 full exit. Keys never leave your Ledger. This transaction moves only a few wei (the network fee) — <b>not</b> your staked ETH. Rewards are already auto-withdrawn and need no action.</p>
 
-  <div class="badges">
-    <span class="pill ok">client-side only</span>
-    <span class="pill neutral" id="selfcheck">self-check: …</span>
-  </div>
-
-  <!-- ============ VALIDATOR STATE ============ -->
+  <!-- ===== WHAT YOU'RE SIGNING (verify these four things) ===== -->
   <div class="panel">
-    <h2>Validator &amp; on-chain state</h2>
-    <div class="field" style="max-width:460px">
-      <label>Validator to act on (both are controlled by the same withdrawal address)</label>
+    <h2>Transaction to sign — verify these</h2>
+
+    <div class="field">
+      <label>Validator to exit</label>
       <select id="validator"></select>
     </div>
-    <div class="warnbox small">Both validators share withdrawal address <span class="mono">0xCb08…AC42</span>. The transaction differs <b>only</b> by pubkey, so confirm the selection above matches the validator you intend to exit.</div>
-    <div class="row"><span class="k">Index</span><span id="v-index" class="mono"></span></div>
-    <div class="row"><span class="k">Provider</span><span id="v-provider"></span></div>
-    <div class="row"><span class="k">Status (consensus)</span><span id="v-status" class="mono">loading…</span></div>
-    <div class="row"><span class="k">Beacon balance</span><span id="v-bal" class="mono">…</span></div>
-    <div class="row"><span class="k">Exit epoch</span><span id="v-exit" class="mono">…</span></div>
-    <div class="row"><span class="k">Withdrawal address balance</span><span id="v-wbal" class="mono">…</span></div>
-    <div class="row"><span class="k">Withdrawal credentials (on-chain)</span><span id="v-wc" class="mono">…</span></div>
-    <div class="row"><span class="k">Validator pubkey</span><span class="mono" id="v-pk"></span></div>
-    <div class="row"><span class="k">Withdrawal-request predeploy</span><span class="mono" id="v-pd"></span></div>
-    <div id="wc-xcheck"></div>
-    <p class="note" style="margin-top:12px">Data read live from a public beacon + execution endpoint (editable below). Nothing here is trusted from a third party for the exit itself — the exit is a transaction you sign on your Ledger.</p>
+
+    <div class="sumrow"><span class="k">Action</span><span class="v big" id="sum-action">—</span></div>
+    <div class="sumrow"><span class="k">To</span><span class="v"><span class="big">EIP-7002 Predeploy contract</span><span class="mono small" id="sum-to" style="display:block;margin-top:2px"></span></span></div>
+    <div class="sumrow"><span class="k">Value</span><span class="v" id="sum-value">—</span></div>
+    <div class="sumrow"><span class="k">From</span><span class="v"><span class="mono" id="sum-from">connect wallet</span> <span id="sum-from-pill"></span></span></div>
+
+    <details>
+      <summary class="small muted">Calldata (56 bytes) &nbsp;<span class="pill neutral" id="selfcheck">…</span></summary>
+      <div class="databox mono" id="tx-data"></div>
+      <div class="anno"><b>[0:48]</b> pubkey of the selected validator &nbsp;·&nbsp; <b>[48:56]</b> amount = <b>0</b> ⇒ full exit</div>
+    </details>
+
+    <p class="tonote small muted"><b>About “To”:</b> this is the Ethereum <b>EIP-7002 system contract</b> — part of the protocol, installed by the Pectra upgrade. Explorers show it “unverified” because it has no Solidity source (it is hand-written protocol bytecode); it is not a third-party contract. It can only queue an exit request and take the fee — it has no code path to move your other funds.</p>
   </div>
 
-  <!-- ============ REWARDS ============ -->
+  <!-- ===== ACTIONS ===== -->
   <div class="panel">
-    <h2>Claiming rewards</h2>
-    <div class="okbox">No action required for either validator. These are <code>0x01</code> validators, so the protocol automatically sweeps any balance above 32&nbsp;ETH to the withdrawal address. That is why the withdrawal address already holds well above 32&nbsp;ETH. There is no reward-claim transaction to send.</div>
+    <h2>Sign &amp; send</h2>
+    <button id="btn-connect" class="primary">Connect Ledger (via MetaMask / Rabby)</button>
+    <div id="conn" class="small" style="margin:10px 0 0"></div>
+
+    <label class="checkline">
+      <input type="checkbox" id="ack" />
+      <span>I understand this <b>irreversibly</b> exits validator <b id="ack-index">—</b>, signed from my Ledger.</span>
+    </label>
+    <button id="btn-send" class="danger" disabled>Sign &amp; send from Ledger</button>
+    <div id="gate" class="small muted" style="margin-top:10px"></div>
+    <div id="send-result"></div>
   </div>
 
-  <!-- ============ EXIT ============ -->
+  <!-- ===== VERIFY (after sending) ===== -->
   <div class="panel">
-    <h2>Exit the selected validator (withdraw 32 ETH)</h2>
+    <h2>After sending — confirm it registered</h2>
+    <p class="small muted" style="margin-top:-6px">A successful transaction is not proof the exit started (the consensus layer can silently discard a bad request). Confirm the selected validator's <code>exit_epoch</code> leaves <code>FAR_FUTURE</code>.</p>
+    <button id="btn-verify">Check exit status</button>
+    <div class="small mono" id="verify-out" style="margin-top:10px">not checked</div>
+  </div>
 
-    <div class="grid2">
-      <div class="field">
-        <label>Execution RPC (read-only fee/balance when no wallet is connected)</label>
-        <input id="rpc" type="text" />
+  <!-- ===== ADVANCED (collapsed) ===== -->
+  <details class="adv">
+    <summary>On-chain details &amp; settings</summary>
+    <div class="advbody">
+      <div class="grid2">
+        <div class="field"><label>Execution RPC (no-wallet fee/balance reads)</label><input id="rpc" type="text" /></div>
+        <div class="field"><label>Beacon API (status + verification)</label><input id="beacon" type="text" /></div>
       </div>
-      <div class="field">
-        <label>Beacon API (validator status + exit verification)</label>
-        <input id="beacon" type="text" />
-      </div>
+      <div class="field" style="max-width:260px"><label>Fee buffer, wei (burned if unused — keep tiny)</label><input id="buffer" type="number" min="0" value="1000" /></div>
+      <div class="row"><span class="k">Status</span><span id="v-status" class="mono">…</span></div>
+      <div class="row"><span class="k">Beacon balance</span><span id="v-bal" class="mono">…</span></div>
+      <div class="row"><span class="k">Exit epoch</span><span id="v-exit" class="mono">…</span></div>
+      <div class="row"><span class="k">Withdrawal address balance</span><span id="v-wbal" class="mono">…</span></div>
+      <div class="row"><span class="k">Withdrawal credentials</span><span id="v-wc" class="mono">…</span></div>
+      <div id="wc-xcheck"></div>
+      <p class="small muted" style="margin-bottom:0">Endpoints are remembered in this browser and can be preset via <code>?rpc=…&amp;beacon=…</code>. When a wallet is connected, the fee read goes through the wallet.</p>
     </div>
-    <p class="note small" style="margin:-4px 0 14px">Preferred endpoints are remembered in this browser (localStorage) and can be preset via <code>?rpc=…&amp;beacon=…</code> in the URL. When a wallet is connected, fee reads go through the wallet, not this RPC.</p>
+  </details>
 
-    <!-- step 1: connect -->
-    <div class="step"><span class="stepn">1.</span><div style="flex:1">
-      <button id="btn-connect" class="primary">Connect wallet (Ledger via MetaMask/Rabby)</button>
-      <div id="conn" class="small" style="margin-top:10px"></div>
-    </div></div>
-
-    <!-- step 2: fee -->
-    <div class="step"><span class="stepn">2.</span><div style="flex:1">
-      <button id="btn-fee">Read current exit fee</button>
-      <div class="kv"><div class="lbl">current fee</div><div id="fee" class="mono">not read</div></div>
-      <div id="fee-warn"></div>
-    </div></div>
-
-    <!-- step 3: preview -->
-    <div class="step"><span class="stepn">3.</span><div style="flex:1">
-      <div class="field" style="max-width:280px">
-        <label>Buffer above fee, in wei (burned if unused — keep tiny)</label>
-        <input id="buffer" type="number" min="0" value="1000" />
-      </div>
-      <div class="kv">
-        <div class="lbl">exiting</div><div id="tx-target" class="mono">—</div>
-      </div>
-      <div class="kv">
-        <div class="lbl">from (must equal withdrawal address)</div><div id="tx-from" class="mono">—</div>
-      </div>
-      <div class="kv">
-        <div class="lbl">to</div><div id="tx-to" class="mono"></div>
-      </div>
-      <div class="kv">
-        <div class="lbl">value (= fee + buffer)</div><div id="tx-value" class="mono">—</div>
-      </div>
-      <div class="kv">
-        <div class="lbl">data (56 bytes)</div><div id="tx-data" class="mono"></div>
-        <div class="anno"><b>[0:48]</b> selected validator pubkey &nbsp;·&nbsp; <b>[48:56]</b> amount = <b>0</b> ⇒ full exit</div>
-      </div>
-      <button id="btn-copy" class="small">Copy tx fields (for manual signing in any wallet)</button>
-    </div></div>
-
-    <!-- step 4: confirm + send -->
-    <div class="step"><span class="stepn">4.</span><div style="flex:1">
-      <div class="badbox"><b>Irreversible.</b> A processed full exit cannot be cancelled. After this, the 32 ETH is unstaked and swept to your withdrawal address (after the exit queue + ~27h delay). Rewards already arrive automatically; you only need this if you want to stop validating and withdraw the principal.</div>
-      <label class="checkline">
-        <input type="checkbox" id="ack" />
-        <span>I understand this initiates an <b>full exit</b> of the <b id="ack-index">selected</b> validator, signed from my Ledger withdrawal address.</span>
-      </label>
-      <button id="btn-send" class="danger" disabled>Sign &amp; send exit from Ledger</button>
-      <div id="gate" class="small" style="margin-top:10px;color:var(--muted)"></div>
-      <div id="send-result"></div>
-    </div></div>
-  </div>
-
-  <!-- ============ VERIFY ============ -->
-  <div class="panel">
-    <h2>Verify the exit actually registered</h2>
-    <p class="note">The execution layer accepting your transaction is <b>not</b> proof the exit started — a malformed request is silently discarded by the consensus layer. Confirm here that the selected validator's consensus <code>exit_epoch</code> flips from <code>FAR_FUTURE</code> to a real number (it can take minutes to appear after inclusion).</p>
-    <button id="btn-verify">Check exit status on beacon chain</button>
-    <div id="verify" class="kv"><div class="lbl">exit_epoch</div><div id="verify-out" class="mono">not checked</div></div>
-  </div>
-
-  <p class="note small">
-    This tool mirrors an interaction proven in the included Foundry mainnet-fork tests (<code>sim/</code>):
-    calldata is <code>pubkey ‖ uint64(0)</code>, fee is read from the predeploy with empty calldata, and the
-    transaction must originate from the <code>0x01</code> withdrawal address.
-  </p>
+  <p class="small muted">Single static file — no backend, no build, no external scripts, no key handling. Mirrors the Foundry fork tests in <code>sim/</code>.</p>
 
 </div>
 
@@ -198,21 +144,16 @@
 (() => {
   "use strict";
 
-  // ---- validators (audited; must match sim/) ----
-  // Both verified on-chain (beacon) to carry 0x01 credentials pointing to the SAME withdrawal address.
+  // Both validators verified on-chain to carry 0x01 credentials pointing to the SAME withdrawal address.
   const VALIDATORS = [
-    {
-      index: "2122823", provider: "Figment",
+    { index: "2122823", provider: "Figment",
       pubkey: "0xb921c6a5fbdb3726e82a6e81cd8ff1c8419c02cfc233e76ba791386a9e5b30c4f0a2012e11b3d228391d3b12daa88f4d",
       withdrawal: "0xCb08BfC91175B80DCd0197C629774085c165AC42",
-      knownCalldata: "0xb921c6a5fbdb3726e82a6e81cd8ff1c8419c02cfc233e76ba791386a9e5b30c4f0a2012e11b3d228391d3b12daa88f4d0000000000000000",
-    },
-    {
-      index: "2109351", provider: "P2P.org",
+      knownCalldata: "0xb921c6a5fbdb3726e82a6e81cd8ff1c8419c02cfc233e76ba791386a9e5b30c4f0a2012e11b3d228391d3b12daa88f4d0000000000000000" },
+    { index: "2109351", provider: "P2P.org",
       pubkey: "0x884ef90c6302bd0197879e19a88dd46dce369f908917936fa42703a944a8b4bc3e2aa1497a4cd9c7a658ef23388efb9a",
       withdrawal: "0xCb08BfC91175B80DCd0197C629774085c165AC42",
-      knownCalldata: "0x884ef90c6302bd0197879e19a88dd46dce369f908917936fa42703a944a8b4bc3e2aa1497a4cd9c7a658ef23388efb9a0000000000000000",
-    },
+      knownCalldata: "0x884ef90c6302bd0197879e19a88dd46dce369f908917936fa42703a944a8b4bc3e2aa1497a4cd9c7a658ef23388efb9a0000000000000000" },
   ];
   const PREDEPLOY = "0x00000961Ef480Eb55e80D19ad83579A64c007002";
   const DEFAULT_RPC = "https://ethereum-rpc.publicnode.com";
@@ -223,25 +164,17 @@
   function buildFullExitCalldata(pubkeyHex) {
     const pk = pubkeyHex.toLowerCase().replace(/^0x/, "");
     if (pk.length !== 96) throw new Error("pubkey must be 48 bytes");
-    return "0x" + pk + "0".repeat(16); // 8-byte big-endian amount = 0
+    return "0x" + pk + "0".repeat(16);
   }
   function fmtEth(wei) {
     const s = wei.toString().padStart(19, "0");
-    const int = s.slice(0, -18) || "0";
-    let frac = s.slice(-18).replace(/0+$/, "");
-    return frac ? int + "." + frac : int;
-  }
-  function fmtGwei(wei) {
-    const s = wei.toString().padStart(10, "0");
-    const int = s.slice(0, -9) || "0";
-    let frac = s.slice(-9).replace(/0+$/, "");
-    return frac ? int + "." + frac : int;
+    const i = s.slice(0, -18) || "0";
+    const f = s.slice(-18).replace(/0+$/, "");
+    return f ? i + "." + f : i;
   }
   async function rpcFetch(url, method, params) {
-    const r = await fetch(url, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    });
+    const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
     const j = await r.json();
     if (j.error) throw new Error(j.error.message || "rpc error");
     return j.result;
@@ -249,229 +182,158 @@
 
   // ---- state ----
   let provider = null, account = null, chainId = null;
-  let fee = null;             // BigInt
-  let sel = VALIDATORS[0];    // selected validator
+  let fee = null; // BigInt
+  let sel = VALIDATORS[0];
   let EXIT_CALLDATA = buildFullExitCalldata(sel.pubkey);
-
   const $ = (id) => document.getElementById(id);
 
-  // ---- per-validator runtime self-check (defense in depth) ----
+  $("sum-to").textContent = PREDEPLOY;
+  const rpcUrl = () => $("rpc").value.trim();
+  const beaconUrl = () => $("beacon").value.trim();
+  const bufferWei = () => { try { const v = BigInt($("buffer").value || "0"); return v < 0n ? 0n : v; } catch { return 0n; } };
+
+  // ---- calldata self-check (defense in depth) ----
   function runSelfCheck() {
+    const ok = EXIT_CALLDATA === sel.knownCalldata && (EXIT_CALLDATA.length - 2) / 2 === 56 && EXIT_CALLDATA.slice(-16) === "0000000000000000";
     const el = $("selfcheck");
-    const ok = EXIT_CALLDATA === sel.knownCalldata &&
-               (EXIT_CALLDATA.length - 2) / 2 === 56 &&
-               EXIT_CALLDATA.slice(-16) === "0000000000000000";
-    el.textContent = ok ? "self-check: calldata ✓" : "self-check: FAILED";
+    el.textContent = ok ? "verified ✓" : "MISMATCH";
     el.className = "pill " + (ok ? "ok" : "bad");
     return ok;
   }
 
-  // static (validator-independent) fields
-  $("v-pd").textContent = PREDEPLOY;
-  $("tx-to").textContent = PREDEPLOY;
-
-  const rpcUrl = () => $("rpc").value.trim();
-  const beaconUrl = () => $("beacon").value.trim();
-
   // ---- validator selection ----
   function renderSelected() {
     EXIT_CALLDATA = buildFullExitCalldata(sel.pubkey);
-    $("v-index").textContent = "#" + sel.index;
-    $("v-provider").textContent = sel.provider;
-    $("v-pk").textContent = sel.pubkey;
-    $("tx-data").textContent = EXIT_CALLDATA;
-    $("tx-target").textContent = "validator #" + sel.index + " (" + sel.provider + ")";
+    $("sum-action").textContent = "Full exit of #" + sel.index + " (" + sel.provider + ")";
     $("ack-index").textContent = "#" + sel.index;
+    $("tx-data").textContent = EXIT_CALLDATA;
     runSelfCheck();
+    renderValue();
   }
   function initValidators() {
-    const s = $("validator");
-    s.innerHTML = "";
-    VALIDATORS.forEach((v, i) => {
-      const o = document.createElement("option");
-      o.value = String(i);
-      o.textContent = "#" + v.index + " — " + v.provider;
-      s.appendChild(o);
-    });
-    s.value = "0";
-    sel = VALIDATORS[0];
-    renderSelected();
+    const s = $("validator"); s.innerHTML = "";
+    VALIDATORS.forEach((v, i) => { const o = document.createElement("option"); o.value = String(i); o.textContent = "#" + v.index + " — " + v.provider; s.appendChild(o); });
+    s.value = "0"; sel = VALIDATORS[0]; renderSelected();
   }
-  function selectValidator(i) {
-    sel = VALIDATORS[i] || VALIDATORS[0];
-    renderSelected();
-    loadState();
-    updatePreview();
+  function selectValidator(i) { sel = VALIDATORS[i] || VALIDATORS[0]; renderSelected(); loadState(); updateGate(); }
+
+  // ---- value (fee + buffer) ----
+  function renderValue() {
+    if (fee === null) { $("sum-value").innerHTML = '<span class="muted">reading… </span><a href="#" id="fee-retry">retry</a>'; wireRetry(); return; }
+    const v = fee + bufferWei();
+    $("sum-value").innerHTML = '<b>' + v.toString() + ' wei</b> <span class="muted">(' + fmtEth(v) + ' ETH — fee ' + fee.toString() + ' + buffer ' + bufferWei().toString() + ')</span>';
     updateGate();
   }
+  function wireRetry() { const r = $("fee-retry"); if (r) r.addEventListener("click", (e) => { e.preventDefault(); readFee(); }); }
 
-  // ---- reads: validator status + balances ----
+  async function readFee() {
+    try {
+      const call = { to: PREDEPLOY, data: "0x" };
+      const res = provider ? await provider.request({ method: "eth_call", params: [call, "latest"] })
+                           : await rpcFetch(rpcUrl(), "eth_call", [call, "latest"]);
+      fee = BigInt(res);
+    } catch (e) {
+      fee = null; $("sum-value").innerHTML = '<span class="bad">fee read failed</span> <a href="#" id="fee-retry">retry</a>'; wireRetry();
+      return null;
+    }
+    renderValue();
+    return fee;
+  }
+
+  // ---- on-chain state (advanced) ----
   async function loadState() {
     $("v-status").textContent = "loading…";
     try {
-      const res = await fetch(beaconUrl() + "/eth/v1/beacon/states/head/validators/" + sel.index);
-      const j = await res.json();
+      const j = await (await fetch(beaconUrl() + "/eth/v1/beacon/states/head/validators/" + sel.index)).json();
       const d = j.data;
       $("v-status").textContent = d.status;
       $("v-bal").textContent = fmtEth(BigInt(d.balance) * 1000000000n) + " ETH";
       const ee = d.validator.exit_epoch;
-      $("v-exit").textContent = ee === FAR_FUTURE ? "none (FAR_FUTURE) — active" : ee + " (exit initiated)";
+      $("v-exit").textContent = ee === FAR_FUTURE ? "none (active)" : ee + " (exit initiated)";
       const wc = d.validator.withdrawal_credentials;
       $("v-wc").textContent = wc;
-      const onchainAddr = "0x" + wc.slice(-40);
-      const matches = onchainAddr.toLowerCase() === sel.withdrawal.toLowerCase();
+      const matches = ("0x" + wc.slice(-40)).toLowerCase() === sel.withdrawal.toLowerCase();
       $("wc-xcheck").innerHTML = matches
-        ? '<div class="okbox small">✓ On-chain withdrawal credential for #' + sel.index + ' matches this tool’s address ' + sel.withdrawal + '.</div>'
-        : '<div class="badbox small">✗ On-chain credential for #' + sel.index + ' does NOT match the configured address. Do not proceed.</div>';
-    } catch (e) {
-      $("v-status").textContent = "beacon read failed: " + e.message;
-    }
+        ? '<div class="okbox small">✓ On-chain credential for #' + sel.index + ' points to ' + sel.withdrawal + '.</div>'
+        : '<div class="badbox small">✗ On-chain credential for #' + sel.index + ' does NOT match. Do not proceed.</div>';
+    } catch (e) { $("v-status").textContent = "beacon read failed: " + e.message; }
     try {
       const bal = await rpcFetch(rpcUrl(), "eth_getBalance", [sel.withdrawal, "latest"]);
-      $("v-wbal").textContent = fmtEth(BigInt(bal)) + " ETH  (" + sel.withdrawal + ")";
-    } catch (e) {
-      $("v-wbal").textContent = "balance read failed: " + e.message;
-    }
-  }
-
-  // ---- fee ----
-  async function readFee() {
-    $("btn-fee").disabled = true;
-    try {
-      let res;
-      const call = { to: PREDEPLOY, data: "0x" };
-      if (provider) res = await provider.request({ method: "eth_call", params: [call, "latest"] });
-      else res = await rpcFetch(rpcUrl(), "eth_call", [call, "latest"]);
-      fee = BigInt(res);
-      $("fee").textContent = fee.toString() + " wei  (" + fmtGwei(fee) + " gwei)";
-      const warn = $("fee-warn");
-      if (fee > 1000000000000000n) { // > 0.001 ETH ⇒ congested queue
-        warn.innerHTML = '<div class="warnbox">Fee is unusually high — the exit queue is congested. Overpayment is burned, so double-check before sending, or wait for it to fall.</div>';
-      } else { warn.innerHTML = ""; }
-      updatePreview();
-    } catch (e) {
-      $("fee").textContent = "read failed: " + e.message;
-    } finally {
-      $("btn-fee").disabled = false;
-    }
-  }
-
-  function bufferWei() {
-    try { const v = BigInt($("buffer").value || "0"); return v < 0n ? 0n : v; }
-    catch { return 0n; }
-  }
-
-  function updatePreview() {
-    if (fee === null) { $("tx-value").textContent = "read the fee first"; return; }
-    const value = fee + bufferWei();
-    $("tx-value").textContent = value.toString() + " wei  (" + fmtEth(value) + " ETH)";
-    updateGate();
+      $("v-wbal").textContent = fmtEth(BigInt(bal)) + " ETH";
+    } catch (e) { $("v-wbal").textContent = "read failed"; }
   }
 
   // ---- wallet ----
   async function connect() {
-    if (!window.ethereum) {
-      $("conn").innerHTML = '<div class="warnbox">No injected wallet found. You can still read the fee and copy the exact tx fields (step 3) to sign in any wallet that controls the withdrawal address. Connect your Ledger through MetaMask or Rabby for one-click signing.</div>';
-      return;
-    }
+    if (!window.ethereum) { $("conn").innerHTML = '<span class="muted">No injected wallet. Connect your Ledger via MetaMask/Rabby, or copy the fields above to sign manually.</span>'; return; }
     provider = window.ethereum;
     try {
-      const accts = await provider.request({ method: "eth_requestAccounts" });
-      account = accts[0] || null;
+      account = (await provider.request({ method: "eth_requestAccounts" }))[0] || null;
       chainId = await provider.request({ method: "eth_chainId" });
       provider.on && provider.on("accountsChanged", (a) => { account = a[0] || null; renderConn(); updateGate(); });
       provider.on && provider.on("chainChanged", (c) => { chainId = c; renderConn(); updateGate(); });
-      renderConn(); updateGate();
-    } catch (e) {
-      $("conn").innerHTML = '<div class="badbox">Connection rejected: ' + e.message + '</div>';
-    }
+      readFee(); renderConn(); updateGate();
+    } catch (e) { $("conn").innerHTML = '<span class="bad">Connection rejected.</span>'; }
   }
-
   function renderConn() {
-    const okChain = chainId === "0x1";
     const okAcct = account && account.toLowerCase() === sel.withdrawal.toLowerCase();
-    $("tx-from").textContent = account || "—";
-    let html = "";
-    html += '<div class="row"><span class="k">account</span><span class="mono">' + (account || "—") + '</span></div>';
-    html += '<div class="row"><span class="k">chain</span><span>' +
-      (okChain ? '<span class="pill ok">mainnet</span>' : '<span class="pill bad">' + (chainId || "?") + ' — switch to mainnet</span>') + '</span></div>';
-    html += '<div class="row"><span class="k">is withdrawal address?</span><span>' +
-      (okAcct ? '<span class="pill ok">yes</span>' : '<span class="pill bad">NO — the consensus layer will discard the request</span>') + '</span></div>';
-    if (account && !okAcct) {
-      html += '<div class="badbox small">Connected account is not the validators’ withdrawal address. Select account <span class="mono">' + sel.withdrawal + '</span> (your Ledger) in your wallet. Sending from any other address wastes the fee and does nothing.</div>';
-    }
-    $("conn").innerHTML = html;
+    const okChain = chainId === "0x1";
+    $("sum-from").textContent = account || "connect wallet";
+    let pill = "";
+    if (account) pill = okAcct ? '<span class="pill ok">withdrawal address ✓</span>' : '<span class="pill bad">wrong address</span>';
+    if (account && !okChain) pill += ' <span class="pill bad">not mainnet</span>';
+    $("sum-from-pill").innerHTML = pill;
+    $("conn").innerHTML = account
+      ? (okAcct && okChain ? '' : '<span class="bad">Select account ' + sel.withdrawal + ' on Ethereum mainnet in your wallet.</span>')
+      : '';
   }
 
   function updateGate() {
-    const okChain = chainId === "0x1";
     const okAcct = account && account.toLowerCase() === sel.withdrawal.toLowerCase();
-    const okFee = fee !== null;
-    const okAck = $("ack").checked;
-    const okSelf = $("selfcheck").className.includes("ok");
+    const okChain = chainId === "0x1";
     const reasons = [];
     if (!provider || !account) reasons.push("connect wallet");
-    if (!okChain) reasons.push("switch to mainnet");
     if (account && !okAcct) reasons.push("use the withdrawal address");
-    if (!okFee) reasons.push("read the fee");
-    if (!okAck) reasons.push("confirm the acknowledgement");
-    if (!okSelf) reasons.push("self-check failed");
-    const ready = provider && account && okChain && okAcct && okFee && okAck && okSelf;
+    if (!okChain) reasons.push("switch to mainnet");
+    if (fee === null) reasons.push("fee unavailable");
+    if (!$("ack").checked) reasons.push("tick the acknowledgement");
+    if (!$("selfcheck").className.includes("ok")) reasons.push("calldata self-check failed");
+    const ready = provider && account && okAcct && okChain && fee !== null && $("ack").checked && $("selfcheck").className.includes("ok");
     $("btn-send").disabled = !ready;
-    $("gate").textContent = ready
-      ? "Ready to exit #" + sel.index + ". You will verify to / value / data on the Ledger screen before approving."
-      : "Blocked until: " + reasons.join(", ") + ".";
+    $("gate").textContent = ready ? "Ready. Verify To / Value / Data on the Ledger screen before approving." : "Blocked until: " + reasons.join(", ") + ".";
   }
 
-  // ---- send ----
+  // ---- send (re-read fee for freshness, then submit) ----
   async function send() {
-    if (fee === null || !account) return;
-    const value = fee + bufferWei();
-    const tx = { from: account, to: PREDEPLOY, value: "0x" + value.toString(16), data: EXIT_CALLDATA };
+    if (!account) return;
     $("btn-send").disabled = true;
-    $("send-result").innerHTML = '<div class="note small" style="margin-top:10px">Confirm on your Ledger…</div>';
+    $("send-result").innerHTML = '<div class="small muted" style="margin-top:10px">Reading fee &amp; confirming on your Ledger…</div>';
+    const f = await readFee();
+    if (f === null) { $("send-result").innerHTML = '<div class="badbox">Could not read the fee — aborted.</div>'; updateGate(); return; }
+    const value = f + bufferWei();
+    const tx = { from: account, to: PREDEPLOY, value: "0x" + value.toString(16), data: EXIT_CALLDATA };
     try {
-      try { tx.gas = await provider.request({ method: "eth_estimateGas", params: [tx] }); }
-      catch { tx.gas = "0x30d40"; /* 200000 fallback */ }
+      try { tx.gas = await provider.request({ method: "eth_estimateGas", params: [tx] }); } catch { tx.gas = "0x30d40"; }
       const hash = await provider.request({ method: "eth_sendTransaction", params: [tx] });
-      $("send-result").innerHTML =
-        '<div class="okbox">Broadcast (exit of #' + sel.index + '). Tx: <a target="_blank" rel="noopener" href="https://etherscan.io/tx/' + hash + '">' + hash + '</a><br>Now use the panel below to confirm the exit registered on the consensus layer.</div>';
-    } catch (e) {
-      $("send-result").innerHTML = '<div class="badbox">Not sent: ' + (e.message || e) + '</div>';
-    } finally {
-      updateGate();
-    }
+      $("send-result").innerHTML = '<div class="okbox">Broadcast (exit of #' + sel.index + '). Tx: <a target="_blank" rel="noopener" href="https://etherscan.io/tx/' + hash + '">' + hash.slice(0, 18) + '…</a> — now confirm below.</div>';
+    } catch (e) { $("send-result").innerHTML = '<div class="badbox">Not sent: ' + (e.message || e) + '</div>'; }
+    finally { updateGate(); }
   }
 
   // ---- verify ----
   async function verify() {
     $("btn-verify").disabled = true;
     try {
-      const res = await fetch(beaconUrl() + "/eth/v1/beacon/states/head/validators/" + sel.index);
-      const j = await res.json();
-      const ee = j.data.validator.exit_epoch;
-      const st = j.data.status;
+      const j = await (await fetch(beaconUrl() + "/eth/v1/beacon/states/head/validators/" + sel.index)).json();
+      const ee = j.data.validator.exit_epoch, st = j.data.status;
       $("verify-out").innerHTML = ee === FAR_FUTURE
-        ? 'FAR_FUTURE — exit NOT yet registered for #' + sel.index + ' (status: ' + st + '). If you just sent, wait a few minutes and re-check.'
-        : '<span class="hl">' + ee + '</span> — exit registered ✓ for #' + sel.index + ' (status: ' + st + ')';
-    } catch (e) {
-      $("verify-out").textContent = "check failed: " + e.message;
-    } finally {
-      $("btn-verify").disabled = false;
-    }
+        ? "FAR_FUTURE — exit NOT yet registered for #" + sel.index + " (status: " + st + "). If you just sent, wait a few minutes."
+        : '<span style="color:var(--accent)">' + ee + "</span> — exit registered ✓ for #" + sel.index + " (status: " + st + ")";
+    } catch (e) { $("verify-out").textContent = "check failed: " + e.message; }
+    finally { $("btn-verify").disabled = false; }
   }
 
-  // ---- copy ----
-  async function copyFields() {
-    const value = fee === null ? "(read fee first)" : (fee + bufferWei()).toString();
-    const text = "validator: #" + sel.index + " (" + sel.provider + ")\nfrom:  " + sel.withdrawal +
-      "\nto:    " + PREDEPLOY + "\nvalue: " + value + " wei\ndata:  " + EXIT_CALLDATA + "\n";
-    try { await navigator.clipboard.writeText(text); $("btn-copy").textContent = "Copied ✓";
-      setTimeout(() => ($("btn-copy").textContent = "Copy tx fields (for manual signing in any wallet)"), 1500); }
-    catch { alert(text); }
-  }
-
-  // ---- endpoints: preferred RPC/beacon (query param > localStorage > default) ----
+  // ---- endpoints ----
   function initEndpoints() {
     const p = new URLSearchParams(location.search);
     let sr = null, sb = null;
@@ -479,24 +341,21 @@
     $("rpc").value = p.get("rpc") || sr || DEFAULT_RPC;
     $("beacon").value = p.get("beacon") || sb || DEFAULT_BEACON;
   }
-  function persistEndpoints() {
-    try { localStorage.setItem("figment.rpc", rpcUrl()); localStorage.setItem("figment.beacon", beaconUrl()); } catch (e) {}
-  }
+  function persistEndpoints() { try { localStorage.setItem("figment.rpc", rpcUrl()); localStorage.setItem("figment.beacon", beaconUrl()); } catch (e) {} }
 
   // ---- wire ----
   $("validator").addEventListener("change", (e) => selectValidator(Number(e.target.value)));
   $("btn-connect").addEventListener("click", connect);
-  $("btn-fee").addEventListener("click", readFee);
   $("btn-send").addEventListener("click", send);
   $("btn-verify").addEventListener("click", verify);
-  $("btn-copy").addEventListener("click", copyFields);
-  $("buffer").addEventListener("input", updatePreview);
   $("ack").addEventListener("change", updateGate);
-  $("rpc").addEventListener("change", () => { persistEndpoints(); loadState(); });
+  $("buffer").addEventListener("input", renderValue);
+  $("rpc").addEventListener("change", () => { persistEndpoints(); readFee(); loadState(); });
   $("beacon").addEventListener("change", () => { persistEndpoints(); loadState(); });
 
   initEndpoints();
   initValidators();
+  readFee();
   loadState();
   updateGate();
 })();
