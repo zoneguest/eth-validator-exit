@@ -347,9 +347,9 @@
     try {
       const j = await (await fetch(beaconUrl() + "/eth/v1/beacon/states/head/validators/" + sel.index)).json();
       const ee = j.data.validator.exit_epoch, st = j.data.status;
-      $("verify-out").innerHTML = ee === FAR_FUTURE
+      $("verify-out").textContent = ee === FAR_FUTURE
         ? "FAR_FUTURE — exit NOT yet registered for #" + sel.index + " (status: " + st + "). If you just sent, wait a few minutes."
-        : '<span style="color:var(--accent)">' + ee + "</span> — exit registered ✓ for #" + sel.index + " (status: " + st + ")";
+        : ee + " — exit registered ✓ for #" + sel.index + " (status: " + st + ")";
     } catch (e) { $("verify-out").textContent = "check failed: " + e.message; }
     finally { $("btn-verify").disabled = false; }
   }
