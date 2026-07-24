@@ -270,9 +270,10 @@
     try {
       account = (await provider.request({ method: "eth_requestAccounts" }))[0] || null;
       chainId = await provider.request({ method: "eth_chainId" });
-      provider.on && provider.on("accountsChanged", (a) => { account = a[0] || null; renderConn(); updateGate(); });
+      provider.on && provider.on("accountsChanged", (a) => { account = a[0] || null; renderConn(); renderConnectBtn(); updateGate(); });
       provider.on && provider.on("chainChanged", (c) => { chainId = c; renderConn(); updateGate(); });
       readFee(); renderConn(); updateGate();
+      renderConnectBtn();
     } catch (e) { $("conn").innerHTML = '<span class="bad">Connection rejected.</span>'; }
   }
   function renderConn() {
@@ -286,6 +287,12 @@
     $("conn").innerHTML = account
       ? (okAcct && okChain ? '' : '<span class="bad">Select account ' + sel.withdrawal + ' on Ethereum mainnet in your wallet.</span>')
       : '';
+  }
+
+  function renderConnectBtn() {
+    const b = $("btn-connect");
+    if (account) { b.textContent = "Wallet Connected ✓"; b.classList.remove("primary"); }
+    else { b.textContent = "Connect Ledger (via MetaMask / Rabby)"; b.classList.add("primary"); }
   }
 
   function updateGate() {
