@@ -69,7 +69,7 @@
 <div class="wrap">
 
   <h1>Validator Exit</h1>
-  <p class="sub">EIP-7002 full exit. Keys never leave your Ledger. This transaction moves only a few wei (the network fee) — <b>not</b> your staked ETH. Rewards are already auto-withdrawn and need no action.</p>
+  <p class="sub">EIP-7002 full exit. Keys never leave your Ledger. The request <b>Value</b> is a few wei when the queue is idle — <b>not</b> your staked ETH; normal transaction gas is separate. Rewards are already auto-withdrawn and need no action.</p>
 
   <!-- ===== WHAT YOU'RE SIGNING (verify these four things) ===== -->
   <div class="panel">
@@ -125,7 +125,7 @@
         <div class="field"><label>Execution RPC (no-wallet fee/balance reads)</label><input id="rpc" type="text" /></div>
         <div class="field"><label>Beacon API (status + verification)</label><input id="beacon" type="text" /></div>
       </div>
-      <div class="field" style="max-width:260px"><label>Fee buffer, wei (burned if unused — keep tiny)</label><input id="buffer" type="number" min="0" value="1000" /></div>
+      <div class="field" style="max-width:260px"><label>Fee buffer, wei (burned if unused — keep tiny; 0.01 ETH request-value cap)</label><input id="buffer" type="number" min="0" value="1000" /></div>
       <div class="row"><span class="k">Status</span><span id="v-status" class="mono">…</span></div>
       <div class="row"><span class="k">Beacon balance</span><span id="v-bal" class="mono">…</span></div>
       <div class="row"><span class="k">Exit epoch</span><span id="v-exit" class="mono">…</span></div>
@@ -159,6 +159,7 @@
   const DEFAULT_RPC = "https://ethereum-rpc.publicnode.com";
   const DEFAULT_BEACON = "https://ethereum-beacon-api.publicnode.com";
   const FAR_FUTURE = "18446744073709551615";
+  const MAX_REQUEST_VALUE_WEI = 10000000000000000n; // 0.01 ETH; gas is separate
 
   // ---- pure helpers ----
   function buildFullExitCalldata(pubkeyHex) {
@@ -220,8 +221,10 @@
   // ---- value (fee + buffer) ----
   function renderValue() {
     if (fee === null) { $("sum-value").innerHTML = '<span class="muted">reading… </span><a href="#" id="fee-retry">retry</a>'; wireRetry(); return; }
-    const v = fee + bufferWei();
-    $("sum-value").innerHTML = '<b>' + v.toString() + ' wei</b> <span class="muted">(' + fmtEth(v) + ' ETH — fee ' + fee.toString() + ' + buffer ' + bufferWei().toString() + ')</span>';
+    const buffer = bufferWei();
+    const v = fee + buffer;
+    const warning = v > MAX_REQUEST_VALUE_WEI ? ' <span class="bad">exceeds ' + fmtEth(MAX_REQUEST_VALUE_WEI) + ' ETH safety cap</span>' : '';
+    $("sum-value").innerHTML = '<b>' + v.toString() + ' wei</b> <span class="muted">(' + fmtEth(v) + ' ETH — fee ' + fee.toString() + ' + buffer ' + buffer.toString() + ')</span>' + warning;
     updateGate();
   }
   function wireRetry() { const r = $("fee-retry"); if (r) r.addEventListener("click", (e) => { e.preventDefault(); readFee(); }); }
@@ -231,9 +234,12 @@
       const call = { to: PREDEPLOY, data: "0x" };
       const res = provider ? await provider.request({ method: "eth_call", params: [call, "latest"] })
                            : await rpcFetch(rpcUrl(), "eth_call", [call, "latest"]);
-      fee = BigInt(res);
+      if (typeof res !== "string" || !/^0x[0-9a-fA-F]+$/.test(res)) throw new Error("invalid fee quantity");
+      const nextFee = BigInt(res);
+      if (nextFee < 1n || nextFee > MAX_REQUEST_VALUE_WEI) throw new Error("fee outside safety bounds");
+      fee = nextFee;
     } catch (e) {
-      fee = null; $("sum-value").innerHTML = '<span class="bad">fee read failed</span> <a href="#" id="fee-retry">retry</a>'; wireRetry();
+      fee = null; $("sum-value").innerHTML = '<span class="bad">fee unavailable or above 0.01 ETH safety cap</span> <a href="#" id="fee-retry">retry</a>'; wireRetry(); updateGate();
       return null;
     }
     renderValue();
@@ -303,9 +309,11 @@
     if (account && !okAcct) reasons.push("use the withdrawal address");
     if (!okChain) reasons.push("switch to mainnet");
     if (fee === null) reasons.push("fee unavailable");
+    if (fee !== null && fee + bufferWei() > MAX_REQUEST_VALUE_WEI) reasons.push("fee + buffer exceeds 0.01 ETH safety cap");
     if (!$("ack").checked) reasons.push("tick the acknowledgement");
     if (!$("selfcheck").className.includes("ok")) reasons.push("calldata self-check failed");
-    const ready = provider && account && okAcct && okChain && fee !== null && $("ack").checked && $("selfcheck").className.includes("ok");
+    const valueWithinCap = fee !== null && fee + bufferWei() <= MAX_REQUEST_VALUE_WEI;
+    const ready = provider && account && okAcct && okChain && fee !== null && valueWithinCap && $("ack").checked && $("selfcheck").className.includes("ok");
     $("btn-send").disabled = !ready;
     $("gate").textContent = ready ? "Ready. Verify To / Value / Data on the Ledger screen before approving." : "Blocked until: " + reasons.join(", ") + ".";
   }
@@ -318,9 +326,15 @@
     const f = await readFee();
     if (f === null) { $("send-result").innerHTML = '<div class="badbox">Could not read the fee — aborted.</div>'; updateGate(); return; }
     const value = f + bufferWei();
+    if (value > MAX_REQUEST_VALUE_WEI) {
+      $("send-result").innerHTML = '<div class="badbox">Request value exceeds 0.01 ETH safety cap — aborted.</div>';
+      updateGate();
+      return;
+    }
     const tx = { from: account, to: PREDEPLOY, value: "0x" + value.toString(16), data: EXIT_CALLDATA };
     try {
-      try { tx.gas = await provider.request({ method: "eth_estimateGas", params: [tx] }); } catch { tx.gas = "0x30d40"; }
+      try { tx.gas = await provider.request({ method: "eth_estimateGas", params: [tx] }); }
+      catch { $("send-result").innerHTML = '<div class="badbox">Gas estimate failed — aborted.</div>'; return; }
       const hash = await provider.request({ method: "eth_sendTransaction", params: [tx] });
       $("send-result").innerHTML = '<div class="okbox">Broadcast (exit of #' + sel.index + '). Tx: <a target="_blank" rel="noopener" href="https://etherscan.io/tx/' + hash + '">' + hash.slice(0, 18) + '…</a> — now confirm below.</div>';
     } catch (e) { $("send-result").innerHTML = '<div class="badbox">Not sent: ' + (e.message || e) + '</div>'; }
